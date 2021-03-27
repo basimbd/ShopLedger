@@ -12,7 +12,6 @@ public class Operations {
 	}
 	
 	public void addProduct(Product product) {
-		//Connection dbConnection = null;
 		Statement dbStatement = null;
 		try {
 			//dbConnection = DatabaseConnection.connectToDatabase();
@@ -23,8 +22,9 @@ public class Operations {
 															+product.getProfit()+")");
 			System.out.println("Product "+product.getProduct_name()+" added successfully.");
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// Show message if requested product already exist.
+			//e.printStackTrace();
+			System.out.println("Product "+product.getProduct_name()+" already exists.");
 		} finally { 
 		    try { 
 		        if (dbStatement != null) 
@@ -116,6 +116,7 @@ public class Operations {
 				System.out.println("There are no products in the inventory. :(");
 			}else {
 				System.out.printf("%-20s%-25s%6s\n", "Product Name", "Available Quantity", "Profit");
+				System.out.printf("%-20s%-25s%6s\n", "============", "==================", "======");
 				while(dbResultSet.next()) {
 					System.out.printf("%-20s%-25d%6d\n",dbResultSet.getString("product_name"), dbResultSet.getInt("available_quantity"), dbResultSet.getInt("profit"));
 				}

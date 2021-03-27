@@ -26,7 +26,7 @@ public class CommandLineInteraction {
 			System.out.printf("%-8s%s\n", "6", "See available balance.");
 			System.out.printf("%-8s%s\n", "0", "Exit.");
 		}else {
-			System.out.println("Press 7 to return to the main menu.");
+			System.out.println("\nPress 7 to return to the main menu. Press 0 to exit the application.");
 		}
 		
 		int selected_option = selectOption();
@@ -43,8 +43,9 @@ public class CommandLineInteraction {
 				else
 					System.out.println("Please press a number between 0 to 7 to select one of the options.");
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				// If anything other than number is pressed.
+				//e.printStackTrace();
+				System.out.println("Please press a number between 0 to 7 to select one of the options.");
 			}
 		}
 		return selected_option;
@@ -55,7 +56,9 @@ public class CommandLineInteraction {
 			int selected_option = menu();
 			switch(selected_option) {
 			case 0:
+				System.out.println("Saving and closing the application.");
 				writeAccountToDB();
+				System.out.println("Application closed.");
 				System.exit(0);
 				break;
 			case 1:
@@ -91,7 +94,8 @@ public class CommandLineInteraction {
 		try {
 			dbStatement = DatabaseConnection.connectToDatabase().createStatement();
 			Account acc = Account.getAccount();
-			dbStatement.executeUpdate("insert into values("+acc.getAvailable_balance()+","+acc.getProfit()+")");	//Query to Store account to DB
+			dbStatement.executeUpdate("update account set available_balance="+acc.getAvailable_balance()
+									+", profit="+acc.getProfit()+" Where 1");	//Query to Store account to DB
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -115,61 +119,83 @@ public class CommandLineInteraction {
 		int available_quantity = Integer.parseInt(sc.nextLine());
 		
 		System.out.println("Are you you want to add "+product_name+"? Press y to confirm, n to cancel");
-		String confirmation = sc.nextLine();
-		if(confirmation.equalsIgnoreCase("y")) {
-			Product product = new Product(product_name, buy_price, sell_price, available_quantity, sell_price-buy_price);
-			op.addProduct(product);
-			menuStatus = false;
-		}else if(confirmation.equalsIgnoreCase("n")) {
-			menuStatus = false;
-			//start();
-		}else {
-			System.out.println("Please press either y or n.");
+		while (true) {
+			String confirmation = sc.nextLine();
+			if (confirmation.equalsIgnoreCase("y")) {
+				Product product = new Product(product_name, buy_price, sell_price, available_quantity,
+						sell_price - buy_price);
+				op.addProduct(product);
+				menuStatus = false;
+				break;
+			} else if (confirmation.equalsIgnoreCase("n")) {
+				menuStatus = false;
+				break;
+			} else {
+				System.out.println("Please press either y or n.");
+				continue;
+			}
+			//menuStatus = false;
 		}
-		//menuStatus = false;
 	}
 
 	private void deleteProduct() {
 		// TODO Auto-generated method stub
 		Statement dbStatement = null;
 		ResultSet dbResultSet = null;
+		
 		try {
 			dbStatement = DatabaseConnection.connectToDatabase().createStatement();
 			dbResultSet = dbStatement.executeQuery("select id, product_name from products"); //Query to Show available products
+			
 			
 			System.out.println("Available Products are-");
 			
 			//Show the Available Products
 			System.out.printf("%-6s%s\n", "id", "Product Name");
+			System.out.printf("%-6s%s\n", "==", "============");
 			while(dbResultSet.next()) {
 				System.out.printf("%-6d%s\n", dbResultSet.getInt("id"), dbResultSet.getString("product_name"));
 			}
+			dbResultSet.close();
+			//dbStatement.close();
+			
 			
 			//Get id of Product and run Query to get that product from DB
 			System.out.println("\nEnter the id of the product you want to delete from the above list.");
 			int id = Integer.parseInt(sc.nextLine());
-			String product_name = dbStatement.executeQuery("select product_name from products where id="+id).getString("product_name");
+			//dbStatement = DatabaseConnection.connectToDatabase().createStatement();
+			dbResultSet = dbStatement.executeQuery("select product_name from products where id="+id);
+			dbResultSet.next();
+			String product_name = dbResultSet.getString("product_name");
 			
 			//If product_name exist, proceed with the rest of the procedures
 			if(product_name != null) {
 				System.out.println("Are you you want to delete "+product_name+"? Press y to confirm, n to cancel");
-				String confirmation = sc.nextLine();
 				
-				//If confirmed, proceed with the rest of the procedures
-				if(confirmation.equalsIgnoreCase("y")) {
-					op.deleteProduct(id, product_name);		//delete from Database
-					menuStatus = false;
-				}else if(confirmation.equalsIgnoreCase("n")) {
-					menuStatus = false;
-				}else {
-					System.out.println("Please press either y or n.");
+				while (true) {
+					String confirmation = sc.nextLine();
+					//If confirmed, proceed with the rest of the procedures
+					if (confirmation.equalsIgnoreCase("y")) {
+						op.deleteProduct(id, product_name); //delete from Database
+						menuStatus = false;
+						break;
+					} else if (confirmation.equalsIgnoreCase("n")) {
+						menuStatus = false;
+						break;
+					} else {
+						System.out.println("Please press either y or n.");
+						continue;
+					} 
 				}
 			}else {
 				System.out.println("This product doesn't exist. Please check the id you provided.");
+				menuStatus = false;
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// SQL error if product id not exist. Error message shown.
+			//e.printStackTrace();
+			System.out.println("This product doesn't exist. Please check the id you provided. 2");
+			menuStatus = false;
 		} finally { 
 		    try { 
 		        if (dbResultSet != null) 
@@ -188,23 +214,28 @@ public class CommandLineInteraction {
 		Statement dbStatement = null;
 		ResultSet dbResultSet = null;
 		ResultSet dbResultSet2 = null;
+		
 		try {
 			dbStatement = DatabaseConnection.connectToDatabase().createStatement();
 			dbResultSet = dbStatement.executeQuery("select id, product_name from products"); //Query to Show available products
+			
 			
 			System.out.println("Available Products are-");
 
 			//Show the Available Products
 			System.out.printf("%-6s%s\n", "id", "Product Name");
+			System.out.printf("%-6s%s\n", "==", "============");
 			while(dbResultSet.next()) {
 				System.out.printf("%-6d%s\n", dbResultSet.getInt("id"), dbResultSet.getString("product_name"));
 			}
+			
 			
 			//Get id of Product and run Query to get that product from DB
 			System.out.println("\nEnter the id of the product you want to buy from the above list.");
 			int id = Integer.parseInt(sc.nextLine());
 			dbResultSet2 = dbStatement.executeQuery("select product_name, buy_price, sell_price, available_quantity, profit from products where id="
 					+id);
+			
 			
 			//If the id is correct, proceed with the rest of the procedures
 			if(dbResultSet2.isBeforeFirst()) {
@@ -217,27 +248,36 @@ public class CommandLineInteraction {
 				
 				//ask if sure
 				System.out.println("Are you you want to buy "+product_name+"? Press y to confirm, n to cancel");
-				String confirmation = sc.nextLine();
 				
-				//If confirmed, proceed with the rest of the procedures
-				if(confirmation.equalsIgnoreCase("y")) {
-					//create Product object
-					Product product = new Product(product_name,
-							dbResultSet2.getInt("buy_price"), dbResultSet2.getInt("sell_price"),
-							dbResultSet2.getInt("available_quantity"), dbResultSet2.getInt("profit"));
-					op.buyProduct(product, amount);		//to write product to database
-					menuStatus = false;
-				}else if(confirmation.equalsIgnoreCase("n")) {
-					menuStatus = false;
-				}else {
-					System.out.println("Please press either y or n.");
+				
+				while (true) {
+					String confirmation = sc.nextLine();
+					//If confirmed, proceed with the rest of the procedures
+					if (confirmation.equalsIgnoreCase("y")) {
+						//create Product object
+						Product product = new Product(product_name, dbResultSet2.getInt("buy_price"),
+								dbResultSet2.getInt("sell_price"), dbResultSet2.getInt("available_quantity"),
+								dbResultSet2.getInt("profit"));
+						op.buyProduct(product, amount); //to write product to database
+						menuStatus = false;
+						break;
+					} else if (confirmation.equalsIgnoreCase("n")) {
+						menuStatus = false;
+						break;
+					} else {
+						System.out.println("Please press either y or n.");
+						continue;
+					} 
 				}
 			}else {//If the id is incorrect/doesn't exist
 				System.out.println("This product doesn't exist. Please check the id you provided.");
+				menuStatus = false;
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// SQL error if product id not exist. Error message shown.
+			// e.printStackTrace();
+			System.out.println("This product doesn't exist. Please check the id you provided.");
+			menuStatus = false;
 		} finally { 
 		    try { 
 		        if (dbResultSet != null) 
@@ -259,13 +299,16 @@ public class CommandLineInteraction {
 		Statement dbStatement = null;
 		ResultSet dbResultSet = null;
 		ResultSet dbResultSet2 = null;
+		
 		try {
 			dbStatement = DatabaseConnection.connectToDatabase().createStatement();
 			dbResultSet = dbStatement.executeQuery("select id, product_name from products");	//Query to Show available products
 			
+			
 			//Show available products
 			System.out.println("Available Products are-");
 			System.out.printf("%-6s%s\n", "id", "Product Name");
+			System.out.printf("%-6s%s\n", "==", "============");
 			while(dbResultSet.next()) {
 				System.out.printf("%-6d%s\n", dbResultSet.getInt("id"), dbResultSet.getString("product_name"));
 			}
@@ -277,6 +320,7 @@ public class CommandLineInteraction {
 			dbResultSet2 = dbStatement.executeQuery("select product_name, buy_price, sell_price, available_quantity, profit from products where id="
 					+id);
 			
+			
 			//If the given id exists, continue with the rest of the procedure
 			if (dbResultSet2.isBeforeFirst()) {
 				dbResultSet2.next(); // next so that DB cursors points to row
@@ -287,26 +331,34 @@ public class CommandLineInteraction {
 				int amount = Integer.parseInt(sc.nextLine());
 				
 				System.out.println("Are you you want to sell "+product_name+"? Press y to confirm, n to cancel");
-				String confirmation = sc.nextLine();
 				
-				//If confirmed, proceed with the rest of the procedures
-				if (confirmation.equalsIgnoreCase("y")) {
-					Product product = new Product(product_name,
-							dbResultSet2.getInt("buy_price"), dbResultSet2.getInt("sell_price"),
-							dbResultSet2.getInt("available_quantity"), dbResultSet2.getInt("profit"));
-					op.sellProduct(product, amount);	//update DB
-					menuStatus = false;
-				}else if(confirmation.equalsIgnoreCase("n")) {
-					menuStatus = false;
-				}else {
-					System.out.println("Please press either y or n.");
+				while (true) {
+					String confirmation = sc.nextLine();
+					// If confirmed, proceed with the rest of the procedures
+					if (confirmation.equalsIgnoreCase("y")) {
+						Product product = new Product(product_name, dbResultSet2.getInt("buy_price"),
+								dbResultSet2.getInt("sell_price"), dbResultSet2.getInt("available_quantity"),
+								dbResultSet2.getInt("profit"));
+						op.sellProduct(product, amount); // update DB
+						menuStatus = false;
+						break;
+					} else if (confirmation.equalsIgnoreCase("n")) {
+						menuStatus = false;
+						break;
+					} else {
+						System.out.println("Please press either y or n.");
+						continue;
+					}
 				}
 			}else {//If the id is incorrect/doesn't exist
 				System.out.println("The product doesn't exist. Please check the id you provided.");
+				menuStatus = false;
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// SQL error if product id not exist. Error message shown.
+			// e.printStackTrace();
+			System.out.println("This product doesn't exist. Please check the id you provided.");
+			menuStatus = false;
 		} finally { 
 		    try { 
 		        if (dbResultSet != null) 
